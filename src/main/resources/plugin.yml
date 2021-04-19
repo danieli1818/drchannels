@@ -1,0 +1,11 @@
+name: DRChannels
+version: ${project.version}
+main: me.danieli1818.drchannels.DRChannels
+authors: [DanielRottner]
+description: DRChannels Minecraft Plugin For Chat Channels.
+api-version: 1.12
+
+commands:
+    drchannels:
+        description: channels commands.
+        aliases: [drchannel, channels, channel, chan, ch]
