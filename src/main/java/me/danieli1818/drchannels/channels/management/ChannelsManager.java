@@ -231,7 +231,9 @@ public class ChannelsManager {
 		event.setMessage(message);
 		Set<Player> recipients = event.getRecipients();
 		recipients.clear();
-		recipients.addAll(channel.getPlayersToSendMessageTo(player, message).parallelStream().map((UUID uuid) -> this.plugin.getServer().getPlayer(uuid)).collect(Collectors.toSet()));
+		Set<Player> channelPlayers = channel.getPlayersToSendMessageTo(player, message).parallelStream().map((UUID uuid) -> this.plugin.getServer().getPlayer(uuid)).collect(Collectors.toSet());
+		Set<Player> onlineChannelPlayers = channelPlayers.parallelStream().filter((Player currentPlayer) -> currentPlayer != null && currentPlayer.isOnline()).collect(Collectors.toSet());
+		recipients.addAll(onlineChannelPlayers);
 	}
 	
 	private void sendMessage(Channel channel, String format, String message, Player sender) {
