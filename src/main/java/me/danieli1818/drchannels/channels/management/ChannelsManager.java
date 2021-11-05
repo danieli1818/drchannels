@@ -31,7 +31,7 @@ public class ChannelsManager {
 
 	private Map<String, Channel> channels;
 	private Map<UUID, String> currentChannelPerPlayer;
-	private String defaultChannel;
+	private List<String> defaultChannels;
 	private Map<String, String> aliases;
 	private Plugin plugin;
 	
@@ -42,6 +42,7 @@ public class ChannelsManager {
 		this.currentChannelPerPlayer = new HashMap<UUID, String>();
 		this.aliases = new HashMap<>();
 		this.plugin = plugin;
+		this.defaultChannels = new ArrayList<>();
 	}
 	
 	public static ChannelsManager getInstance() {
@@ -140,7 +141,7 @@ public class ChannelsManager {
 			return;
 		}
 		loadChannelsFromFileConfiguration(fileConfiguration);
-		loadDefaultChannel();
+		loadDefaultChannels();
 		loadAliases();
 	}
 	
@@ -158,9 +159,9 @@ public class ChannelsManager {
 		}
 	}
 	
-	private void loadDefaultChannel() {
+	private void loadDefaultChannels() {
 		FileConfiguration fileConfiguration = FileConfigurationsManager.getInstance().getFileConfiguration("config.yml");
-		this.defaultChannel = fileConfiguration.getString("default_channel");
+		this.defaultChannels = fileConfiguration.getStringList("default_channels");
 	}
 	
 	private boolean loadAliases() {
@@ -198,12 +199,19 @@ public class ChannelsManager {
 	}
 	
 	public boolean joinDefaultChannelIfNoneCurrentChannel(Player player) {
-		if (this.defaultChannel != null 
+		if (this.defaultChannels != null 
+				&& !this.defaultChannels.isEmpty()
 				&& this.currentChannelPerPlayer.get(player.getUniqueId()) == null 
-				&& this.channels.get(this.defaultChannel) != null
-				&& this.channels.get(this.defaultChannel).canJoin(player)) {
-			this.channels.get(this.defaultChannel).addPlayer(player.getUniqueId());
-			this.currentChannelPerPlayer.put(player.getUniqueId(), this.defaultChannel);
+				) {
+			for (String channelName : this.defaultChannels) {
+				Channel channel = this.channels.get(channelName);
+				if (channel != null
+						&& channel.canJoin(player)) {
+					channel.addPlayer(player.getUniqueId());
+					this.currentChannelPerPlayer.put(player.getUniqueId(), channelName);
+					break;
+				}
+			}
 			return true;
 		}
 		return false;
