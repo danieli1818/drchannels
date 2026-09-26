@@ -24,3 +24,9 @@ hs_err_pid*
 
 # Maven build output
 target/
+
+# IDE metadata (generated from pom.xml by Eclipse / VS Code Java)
+.classpath
+.project
+.settings/
+.factorypath
