@@ -1,0 +1,48 @@
+# DRChannels configuration
+
+# The channel every player is placed in on login and falls back to when leaving their focused channel.
+# It is always joinable, regardless of its permission settings.
+default-channel: global
+
+# Chat format used ONLY when EssentialsChat is not installed.
+# When EssentialsChat is installed, its own chat.format / group-formats are used instead;
+# add {CHANNEL} to those formats to control where the channel tag goes (otherwise it is prepended).
+# Placeholders: {CHANNEL}, {DISPLAYNAME}, {MESSAGE}. Supports & colour codes and &#rrggbb hex colours.
+format: '{CHANNEL}{DISPLAYNAME}&7: &r{MESSAGE}'
+
+messages:
+  prefix: '&8[&6Channels&8]&r '
+  no-permission: '&cYou do not have permission to do that.'
+  player-only: '&cOnly players can use this command.'
+  unknown-channel: '&cChannel &e{channel}&c does not exist.'
+  usage: '&cUsage: &e{usage}'
+  not-in-channel: '&cYou are not focused on any channel. Use &e/ch <channel>&c to join one.'
+  cannot-speak: '&cYou cannot speak in &e{channel}&c here.'
+  save-failed: '&cCould not save channels.yml: {reason}'
+  current: '&7You are focused on {tag}&7({channel}).'
+  join:
+    JOINED: '&aJoined and focused {tag}&a({channel}).'
+    FOCUSED: '&aNow talking in {tag}&a({channel}).'
+    ALREADY_FOCUSED: '&eYou are already talking in {tag}&e({channel}).'
+    NO_PERMISSION: '&cYou are not allowed to join &e{channel}&c.'
+  leave:
+    LEFT: '&aLeft {tag}&a({channel}).'
+    NOT_MEMBER: '&cYou are not in &e{channel}&c.'
+    NOT_LEAVABLE: '&cYou cannot leave &e{channel}&c.'
+  list:
+    header: '&6Channels &7(&a● joined&7, &e● focused&7, &8● available&7):'
+    entry: ' {state}● {tag}&f{channel}&7{aliases}'
+    aliases: ' (aliases: {aliases})'
+  info:
+    - '&6Channel &e{channel} &7- {name}'
+    - '&7Type: &f{type}  &7Tag: {tag}'
+    - '&7Join permission: &f{join-permission}  &7Speak permission: &f{speak-permission}'
+    - '&7Auto-join: &f{auto-join}  &7Leavable: &f{leavable}  &7Aliases: &f{aliases}'
+  create:
+    success: '&aCreated channel &e{channel}&a.'
+    exists: '&cChannel &e{channel}&c already exists.'
+    invalid: '&cCould not create channel: {reason}'
+  delete:
+    success: '&aDeleted channel &e{channel}&a.'
+    default: '&cThe default channel cannot be deleted.'
+  reload: '&aReloaded DRChannels ({count} channels).'
