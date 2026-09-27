@@ -104,6 +104,27 @@ class ChannelConfigTest {
         assertTrue(config.load("global").containsKey("near"));
     }
 
+    @Test
+    void neverOverwritesAnUnreadableFile() throws IOException {
+        final String broken = "channels:\n  global: [unclosed\n";
+        Files.writeString(file.toPath(), broken);
+        assertThrows(IOException.class, () -> config.load("global"));
+        assertThrows(IOException.class, () -> config.save("market", section("global")));
+        assertThrows(IOException.class, () -> config.remove("global"));
+        assertEquals(broken, Files.readString(file.toPath()));
+    }
+
+    @Test
+    void saveKeepsHandEditsAndRejectsExistingIds() throws IOException {
+        Files.writeString(file.toPath(), "channels:\n  global:\n    type: global\n");
+        config.load("global");
+        Files.writeString(file.toPath(), "channels:\n  global:\n    type: global\n  trade:\n    type: global\n");
+
+        config.save("market", section("global"));
+        assertEquals(List.of("global", "trade", "market"), List.copyOf(config.load("global").keySet()));
+        assertThrows(IllegalArgumentException.class, () -> config.save("trade", section("global")));
+    }
+
     private static MemoryConfiguration section(String type) {
         final MemoryConfiguration section = new MemoryConfiguration();
         section.set("type", type);

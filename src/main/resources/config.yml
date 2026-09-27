@@ -46,3 +46,4 @@ messages:
     success: '&aDeleted channel &e{channel}&a.'
     default: '&cThe default channel cannot be deleted.'
   reload: '&aReloaded DRChannels ({count} channels).'
+  reload-failed: '&cCould not read channels.yml; kept the current channels. See the console for details.'

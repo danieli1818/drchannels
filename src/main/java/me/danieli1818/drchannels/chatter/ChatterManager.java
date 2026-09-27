@@ -12,6 +12,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -97,7 +98,7 @@ public final class ChatterManager {
             chatter.left.add(channel.id());
         }
         if (channel.id().equals(chatter.focus())) {
-            chatter.focus(fallbackFocus(chatter));
+            chatter.focus(fallbackFocus(player, chatter));
         }
         write(player, chatter);
         return LeaveResult.LEFT;
@@ -119,35 +120,61 @@ public final class ChatterManager {
         return chatter == null || chatter.focus() == null ? Optional.empty() : channels.byId(chatter.focus());
     }
 
-    private void reconcile(Player player, Chatter chatter, boolean login) {
-        for (final Channel channel : channels.all()) {
-            if (channel.autoJoin() && !chatter.left.contains(channel.id()) && channel.canJoin(player)) {
-                chatter.joined.add(channel.id());
+    /**
+     * Removes a deleted channel from every online player's saved state. Offline players keep the stale id,
+     * which is ignored while no channel with that id exists.
+     */
+    public void purge(String channelId) {
+        for (final Player player : Bukkit.getOnlinePlayers()) {
+            final Chatter chatter = chatters.get(player.getUniqueId());
+            if (chatter != null && (chatter.joined.remove(channelId) | chatter.left.remove(channelId))) {
+                write(player, chatter);
             }
         }
-        if (login) {
-            channels.defaultChannel().ifPresent(channel -> {
-                chatter.joined.add(channel.id());
-                chatter.left.remove(channel.id());
-            });
-        }
-        chatter.joined.removeIf(id -> channels.byId(id).filter(channel -> channel.canJoin(player)).isEmpty());
-        chatter.left.removeIf(id -> channels.byId(id).isEmpty());
-
-        final String focus = chatter.focus();
-        if (focus == null || !chatter.joined.contains(focus)) {
-            chatter.focus(fallbackFocus(chatter));
-        }
-        write(player, chatter);
     }
 
     /**
-     * @return the default channel if joined, otherwise the first joined channel in configuration order
+     * Applies auto-join (and, on login, the default channel) and makes sure the focus is usable. Memberships
+     * are never removed here: a channel that is temporarily missing or not permitted is simply skipped by
+     * routing, so a config mistake or a lapsed rank does not erase the player's choices.
      */
-    private @Nullable String fallbackFocus(Chatter chatter) {
+    private void reconcile(Player player, Chatter chatter, boolean login) {
+        boolean changed = false;
+        for (final Channel channel : channels.all()) {
+            if (channel.autoJoin() && !chatter.left.contains(channel.id()) && channel.canJoin(player)) {
+                changed |= chatter.joined.add(channel.id());
+            }
+        }
+        final Channel defaultChannel = channels.defaultChannel().orElse(null);
+        if (login && defaultChannel != null) {
+            changed |= chatter.joined.add(defaultChannel.id());
+            changed |= chatter.left.remove(defaultChannel.id());
+        }
+
+        final String focus = chatter.focus();
+        if (focus == null || !isUsable(player, chatter, focus)) {
+            final String fallback = fallbackFocus(player, chatter);
+            if (!Objects.equals(focus, fallback)) {
+                chatter.focus(fallback);
+                changed = true;
+            }
+        }
+        if (changed) {
+            write(player, chatter);
+        }
+    }
+
+    private boolean isUsable(Player player, Chatter chatter, String channelId) {
+        return chatter.joined.contains(channelId) && channels.byId(channelId).filter(channel -> channel.canJoin(player)).isPresent();
+    }
+
+    /**
+     * @return the default channel if usable, otherwise the first usable joined channel in configuration order
+     */
+    private @Nullable String fallbackFocus(Player player, Chatter chatter) {
         return channels.defaultChannel()
-                .filter(channel -> chatter.joined.contains(channel.id()))
-                .or(() -> channels.all().stream().filter(channel -> chatter.joined.contains(channel.id())).findFirst())
+                .filter(channel -> isUsable(player, chatter, channel.id()))
+                .or(() -> channels.all().stream().filter(channel -> isUsable(player, chatter, channel.id())).findFirst())
                 .map(Channel::id)
                 .orElse(null);
     }

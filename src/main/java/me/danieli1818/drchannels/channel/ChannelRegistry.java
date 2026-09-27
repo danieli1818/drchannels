@@ -43,12 +43,24 @@ public final class ChannelRegistry {
         this.changeListener = listener;
     }
 
-    public void reload(@Nullable String defaultId) {
-        this.defaultId = defaultId == null ? null : defaultId.toLowerCase(Locale.ROOT);
-        publish(config.load(this.defaultId));
-        if (this.defaultId == null || snapshot.defaultChannel() == null) {
-            logger.severe("Default channel '" + this.defaultId + "' is not defined in channels.yml; players will have no fallback channel.");
+    /**
+     * @return {@code false} if channels.yml could not be read; the current channels are then kept
+     */
+    public boolean reload(@Nullable String defaultId) {
+        final String newDefaultId = defaultId == null ? null : defaultId.toLowerCase(Locale.ROOT);
+        final Map<String, Channel> loaded;
+        try {
+            loaded = config.load(newDefaultId);
+        } catch (IOException e) {
+            logger.severe("Could not load channels.yml, keeping the current channels: " + e.getMessage());
+            return false;
         }
+        this.defaultId = newDefaultId;
+        publish(loaded);
+        if (snapshot.defaultChannel() == null) {
+            logger.severe("Default channel '" + newDefaultId + "' is not defined in channels.yml; players will have no fallback channel.");
+        }
+        return true;
     }
 
     /**
@@ -57,7 +69,7 @@ public final class ChannelRegistry {
      * @throws IllegalArgumentException if a channel with this id already exists
      */
     public Channel create(String id, ConfigurationSection definition) throws InvalidChannelException, IOException {
-        if (snapshot.byId().containsKey(id) || config.contains(id)) {
+        if (snapshot.byId().containsKey(id)) {
             throw new IllegalArgumentException("Channel '" + id + "' already exists");
         }
         final Channel channel = config.parse(id, definition, id.equals(defaultId));

@@ -24,7 +24,8 @@ public final class Messages {
         if (section != null) {
             for (final String key : section.getKeys(true)) {
                 if (section.isList(key)) {
-                    loaded.put(key, section.getStringList(key).stream().map(Text::colorize).toList());
+                    final List<String> lines = section.getStringList(key).stream().map(Text::colorize).toList();
+                    loaded.put(key, lines.isEmpty() ? List.of("") : lines);
                 } else if (section.isString(key)) {
                     loaded.put(key, List.of(Text.colorize(section.getString(key, ""))));
                 }

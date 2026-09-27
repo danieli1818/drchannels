@@ -35,5 +35,5 @@ permissions:
     description: Reload DRChannels configuration.
     default: op
   drchannels.channel.*:
-    description: Join and speak in every permission-gated channel.
+    description: Join, read and speak in every channel, regardless of its permission settings.
     default: op

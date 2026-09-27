@@ -44,7 +44,7 @@ public final class DRChannels extends JavaPlugin {
         channels = new ChannelRegistry(new ChannelConfig(channelTypes, new File(getDataFolder(), CHANNELS_FILE), getLogger()), getLogger());
         final ChatterManager chatters = new ChatterManager(this, channels);
         channels.onChange(chatters::reconcileAll);
-        chat = new ChannelChatService(channels, chatters, messages);
+        chat = new ChannelChatService(channels, chatters, messages, getLogger());
 
         final PluginManager pluginManager = getServer().getPluginManager();
         pluginManager.registerEvents(new PlayerConnectionListener(chatters, chat), this);
@@ -62,14 +62,15 @@ public final class DRChannels extends JavaPlugin {
     /**
      * Reloads config.yml, messages and channels.yml, then re-validates every online player.
      *
-     * @return the number of loaded channels
+     * @return {@code false} if channels.yml could not be read and the current channels were kept
      */
-    public int reload() {
+    public boolean reload() {
         reloadConfig();
+        // Include messages added to the bundled config.yml after the server's copy was written.
+        getConfig().options().copyDefaults(true);
         messages.load(getConfig().getConfigurationSection("messages"));
         chat.standaloneFormat(getConfig().getString("format", "{CHANNEL}{DISPLAYNAME}&7: &r{MESSAGE}"));
-        channels.reload(getConfig().getString("default-channel"));
-        return channels.all().size();
+        return channels.reload(getConfig().getString("default-channel"));
     }
 
     /**
@@ -80,12 +81,13 @@ public final class DRChannels extends JavaPlugin {
     }
 
     private void registerChatHook(PluginManager pluginManager) {
-        if (pluginManager.isPluginEnabled("EssentialsChat") && isClassPresent(ESSENTIALS_CHAT_EVENT)) {
+        final boolean essentialsChat = pluginManager.isPluginEnabled("EssentialsChat") && isClassPresent(ESSENTIALS_CHAT_EVENT);
+        pluginManager.registerEvents(new BukkitChatListener(chat, !essentialsChat), this);
+        if (essentialsChat) {
             pluginManager.registerEvents(new EssentialsChatListener(chat), this);
             getLogger().info("Hooked into EssentialsChat; using its chat formats.");
         } else {
-            pluginManager.registerEvents(new BukkitChatListener(chat), this);
-            getLogger().info("EssentialsChat not found; using the format from config.yml.");
+            getLogger().info("EssentialsChat (2.19+) not found; using the format from config.yml.");
         }
     }
 

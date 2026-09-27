@@ -5,6 +5,7 @@ import me.danieli1818.drchannels.channel.ChannelRegistry;
 import me.danieli1818.drchannels.chatter.ChatterManager;
 import me.danieli1818.drchannels.util.Messages;
 import org.bukkit.command.CommandSender;
+import org.bukkit.entity.Player;
 import org.bukkit.util.StringUtil;
 import org.jetbrains.annotations.Nullable;
 
@@ -71,10 +72,18 @@ public abstract class SubCommand {
     }
 
     /**
-     * Finds a channel by id or alias, telling the sender if it does not exist.
+     * A channel is visible to a sender who may join it or is already in it; other channels are treated as
+     * nonexistent so permission-gated channels are not revealed.
+     */
+    protected boolean isVisible(CommandSender sender, Channel channel) {
+        return channel.canJoin(sender) || (sender instanceof Player player && chatters.isMember(player, channel));
+    }
+
+    /**
+     * Finds a visible channel by id or alias, telling the sender if there is none.
      */
     protected Optional<Channel> findChannel(CommandSender sender, String name) {
-        final Optional<Channel> channel = channels.find(name);
+        final Optional<Channel> channel = channels.find(name).filter(found -> isVisible(sender, found));
         if (channel.isEmpty()) {
             messages.send(sender, "unknown-channel", "channel", name);
         }
@@ -82,11 +91,11 @@ public abstract class SubCommand {
     }
 
     /**
-     * Completes channel ids and aliases of channels matching {@code filter}.
+     * Completes ids and aliases of visible channels matching {@code filter}.
      */
-    protected List<String> completeChannels(String prefix, Predicate<Channel> filter) {
+    protected List<String> completeChannels(CommandSender sender, String prefix, Predicate<Channel> filter) {
         final Stream<String> names = channels.all().stream()
-                .filter(filter)
+                .filter(channel -> isVisible(sender, channel) && filter.test(channel))
                 .flatMap(channel -> Stream.concat(Stream.of(channel.id()), channel.aliases().stream()));
         return StringUtil.copyPartialMatches(prefix, names::iterator, new ArrayList<>());
     }

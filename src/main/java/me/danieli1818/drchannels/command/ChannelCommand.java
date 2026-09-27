@@ -14,7 +14,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.function.IntSupplier;
+import java.util.function.BooleanSupplier;
 
 /**
  * {@code /channel}. Dispatches to subcommands; otherwise {@code /channel <channel>} joins and focuses a
@@ -27,7 +27,7 @@ public final class ChannelCommand implements TabExecutor {
     private final JoinCommand join;
     private final ListCommand list;
 
-    public ChannelCommand(CommandContext context, ChannelTypeRegistry types, IntSupplier reloader) {
+    public ChannelCommand(CommandContext context, ChannelTypeRegistry types, BooleanSupplier reloader) {
         this.context = context;
         this.join = new JoinCommand(context);
         this.list = new ListCommand(context);

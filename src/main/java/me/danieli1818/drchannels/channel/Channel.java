@@ -25,6 +25,11 @@ public record Channel(
         List<String> aliases
 ) {
 
+    /**
+     * Grants access to every channel. Checked explicitly because Bukkit does not expand wildcard nodes.
+     */
+    public static final String BYPASS_PERMISSION = "drchannels.channel.*";
+
     public Channel {
         aliases = List.copyOf(aliases);
     }
@@ -33,8 +38,11 @@ public record Channel(
         return isAllowed(permissible, joinPermission);
     }
 
+    /**
+     * @return whether the player may join the channel, may speak in it, and is currently in its scope
+     */
     public boolean canSpeak(Player player) {
-        return isAllowed(player, speakPermission) && scope.canSpeak(player);
+        return canJoin(player) && isAllowed(player, speakPermission) && scope.canSpeak(player);
     }
 
     public boolean reaches(Player sender, Player recipient) {
@@ -42,6 +50,6 @@ public record Channel(
     }
 
     private static boolean isAllowed(Permissible permissible, @Nullable String permission) {
-        return permission == null || permissible.hasPermission(permission);
+        return permission == null || permissible.hasPermission(permission) || permissible.hasPermission(BYPASS_PERMISSION);
     }
 }

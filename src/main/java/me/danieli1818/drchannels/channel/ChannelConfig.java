@@ -7,6 +7,7 @@ import me.danieli1818.drchannels.api.ChannelTypeRegistry;
 import me.danieli1818.drchannels.api.InvalidChannelException;
 import me.danieli1818.drchannels.util.Text;
 import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.jetbrains.annotations.Nullable;
 
@@ -32,7 +33,6 @@ public final class ChannelConfig {
     private final ChannelTypeRegistry types;
     private final File file;
     private final Logger logger;
-    private YamlConfiguration yaml = new YamlConfiguration();
 
     public ChannelConfig(ChannelTypeRegistry types, File file, Logger logger) {
         this.types = types;
@@ -41,12 +41,13 @@ public final class ChannelConfig {
     }
 
     /**
-     * Reloads the file and parses every channel, logging and skipping invalid ones.
+     * Reads the file and parses every channel, logging and skipping invalid ones.
      *
      * @return channels by id, in file order
+     * @throws IOException if the file cannot be read or is not valid YAML
      */
-    public Map<String, Channel> load(@Nullable String defaultId) {
-        yaml = YamlConfiguration.loadConfiguration(file);
+    public Map<String, Channel> load(@Nullable String defaultId) throws IOException {
+        final YamlConfiguration yaml = read();
         final Map<String, Channel> channels = new LinkedHashMap<>();
         final ConfigurationSection root = yaml.getConfigurationSection(ROOT);
         if (root == null) {
@@ -103,18 +104,41 @@ public final class ChannelConfig {
                 aliases);
     }
 
-    public boolean contains(String id) {
-        return yaml.isConfigurationSection(ROOT + "." + id);
-    }
-
+    /**
+     * Adds a channel definition to the file. The file is re-read first so hand edits made since the last
+     * load are kept, and an unreadable file is never overwritten.
+     *
+     * @throws IllegalArgumentException if the file already defines this channel
+     */
     public void save(String id, ConfigurationSection section) throws IOException {
-        yaml.createSection(ROOT + "." + id, section.getValues(false));
+        final YamlConfiguration yaml = read();
+        final String path = ROOT + "." + id;
+        if (yaml.contains(path)) {
+            throw new IllegalArgumentException("Channel '" + id + "' already exists in " + file.getName());
+        }
+        yaml.createSection(path, section.getValues(false));
         yaml.save(file);
     }
 
+    /**
+     * Removes a channel definition from the file, re-reading it first like {@link #save}.
+     */
     public void remove(String id) throws IOException {
+        final YamlConfiguration yaml = read();
         yaml.set(ROOT + "." + id, null);
         yaml.save(file);
+    }
+
+    private YamlConfiguration read() throws IOException {
+        final YamlConfiguration yaml = new YamlConfiguration();
+        if (file.exists()) {
+            try {
+                yaml.load(file);
+            } catch (InvalidConfigurationException e) {
+                throw new IOException(file.getName() + " is not valid YAML: " + e.getMessage(), e);
+            }
+        }
+        return yaml;
     }
 
     private static @Nullable String permission(@Nullable String value) {

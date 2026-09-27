@@ -30,7 +30,7 @@ final class LeaveCommand extends SubCommand {
     @Override
     public List<String> complete(CommandSender sender, String[] args) {
         return args.length == 1 && sender instanceof Player player
-                ? completeChannels(args[0], channel -> chatters.isMember(player, channel))
+                ? completeChannels(sender, args[0], channel -> chatters.isMember(player, channel))
                 : List.of();
     }
 }

@@ -6,19 +6,24 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
 
 /**
- * Chat hook used when EssentialsChat is not installed: routes and formats the Bukkit chat event itself.
+ * Filters chat recipients by channel. Runs at LOW: after EssentialsChat formats the message (LOWEST) and
+ * before it fires its own chat events (NORMAL), so {@link EssentialsChatListener} can tag the format.
  */
 public final class BukkitChatListener implements Listener {
 
     private final ChannelChatService chat;
+    private final boolean applyStandaloneFormat;
 
-    public BukkitChatListener(ChannelChatService chat) {
+    /**
+     * @param applyStandaloneFormat whether to apply the config.yml format (EssentialsChat not installed)
+     */
+    public BukkitChatListener(ChannelChatService chat, boolean applyStandaloneFormat) {
         this.chat = chat;
+        this.applyStandaloneFormat = applyStandaloneFormat;
     }
 
-    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
     public void onChat(AsyncPlayerChatEvent event) {
-        chat.route(new ChatEventView(event.getPlayer(), event.getRecipients(),
-                event::getFormat, event::setFormat, () -> event.setCancelled(true)), true);
+        chat.route(event, applyStandaloneFormat);
     }
 }

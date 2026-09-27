@@ -86,7 +86,11 @@ final class CreateCommand extends SubCommand {
             return Boolean.parseBoolean(raw);
         }
         if (INTEGER.matcher(raw).matches()) {
-            return Integer.parseInt(raw);
+            try {
+                return Integer.parseInt(raw);
+            } catch (NumberFormatException outOfIntRange) {
+                return Double.parseDouble(raw);
+            }
         }
         if (DECIMAL.matcher(raw).matches()) {
             return Double.parseDouble(raw);

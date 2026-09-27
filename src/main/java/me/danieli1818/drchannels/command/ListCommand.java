@@ -18,8 +18,8 @@ final class ListCommand extends SubCommand {
         final Channel focus = player == null ? null : chatters.focus(player).orElse(null);
         messages.send(sender, "list.header");
         for (final Channel channel : channels.all()) {
-            final boolean member = player != null && chatters.isMember(player, channel);
-            if (member || channel.canJoin(sender)) {
+            if (isVisible(sender, channel)) {
+                final boolean member = player != null && chatters.isMember(player, channel);
                 sender.sendMessage(messages.format("list.entry", placeholders(channel,
                         "state", state(channel, focus, member).toString(),
                         "aliases", aliases(channel))));

@@ -8,9 +8,10 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 
 /**
- * Chat hook used when EssentialsChat is installed. EssentialsChat fires these events after applying its
- * own formatting (group formats, prefixes, placeholders) and copies recipient and format changes back
- * to the real chat event, on both Spigot and Paper. This is the only class that references EssentialsX.
+ * Adds the channel tag to EssentialsChat's format, so its group formats, prefixes and placeholders are kept.
+ * EssentialsChat copies format changes from these events back to the real chat event on both Spigot and
+ * Paper. Recipients are not touched here: on Paper these events expose an unmodifiable recipient set, so
+ * filtering happens in {@link BukkitChatListener}. This is the only class that references EssentialsX.
  */
 public final class EssentialsChatListener implements Listener {
 
@@ -22,16 +23,15 @@ public final class EssentialsChatListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onGlobalChat(GlobalChatEvent event) {
-        route(event);
+        tag(event);
     }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onLocalChat(LocalChatEvent event) {
-        route(event);
+        tag(event);
     }
 
-    private void route(ChatEvent event) {
-        chat.route(new ChatEventView(event.getPlayer(), event.getRecipients(),
-                event::getFormat, event::setFormat, () -> event.setCancelled(true)), false);
+    private void tag(ChatEvent event) {
+        event.setFormat(chat.tagFormat(event.getPlayer(), event.getFormat()));
     }
 }

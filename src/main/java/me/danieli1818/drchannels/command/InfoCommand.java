@@ -33,6 +33,6 @@ final class InfoCommand extends SubCommand {
 
     @Override
     public List<String> complete(CommandSender sender, String[] args) {
-        return args.length == 1 ? completeChannels(args[0], channel -> true) : List.of();
+        return args.length == 1 ? completeChannels(sender, args[0], channel -> true) : List.of();
     }
 }

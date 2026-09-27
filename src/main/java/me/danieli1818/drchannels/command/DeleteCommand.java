@@ -28,6 +28,7 @@ final class DeleteCommand extends SubCommand {
         }
         try {
             channels.delete(channel);
+            chatters.purge(channel.id());
             messages.send(sender, "delete.success", placeholders(channel));
         } catch (IOException e) {
             messages.send(sender, "save-failed", "reason", e.getMessage());
@@ -36,6 +37,6 @@ final class DeleteCommand extends SubCommand {
 
     @Override
     public List<String> complete(CommandSender sender, String[] args) {
-        return args.length == 1 ? completeChannels(args[0], channel -> !channels.isDefault(channel)) : List.of();
+        return args.length == 1 ? completeChannels(sender, args[0], channel -> !channels.isDefault(channel)) : List.of();
     }
 }
