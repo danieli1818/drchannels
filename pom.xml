@@ -1,57 +1,106 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
-  <modelVersion>4.0.0</modelVersion>
-  <groupId>me.danieli1818</groupId>
-  <artifactId>me.danieli1818.drchannels</artifactId>
-  <version>0.0.1-SNAPSHOT</version>
-  <name>DRChannels</name>
-  <description>DRChannels Minecraft Plugin For Chat Channels</description>
-  
-  <properties>
-    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <maven.compiler.target>1.8</maven.compiler.target>
-    <maven.compiler.source>1.8</maven.compiler.source>
-  </properties>
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
 
-  <repositories>
-    <!-- This adds the Spigot Maven repository to the build -->
-    <repository>
-        <id>spigot-repo</id>
-        <url>https://hub.spigotmc.org/nexus/content/repositories/snapshots/</url>
-    </repository>
-    <repository>
-      <id>enginehub-maven</id>
-      <url>http://maven.enginehub.org/repo/</url>
-    </repository>
-    <repository>
-    	<id>EssentialsX</id>
-    	<url>https://repo.essentialsx.net/releases/</url>
-    </repository>
-  </repositories>
+    <groupId>me.danieli1818</groupId>
+    <artifactId>drchannels</artifactId>
+    <version>2.0.0-SNAPSHOT</version>
+    <name>DRChannels</name>
+    <description>Chat channels for Spigot/Paper with optional EssentialsX integration</description>
 
-  <dependencies>
-    <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <version>3.8.1</version>
-      <scope>test</scope>
-    </dependency>
-    <!--This adds the Spigot API artifact to the build -->
-    <dependency>
-           <groupId>org.spigotmc</groupId>
-           <artifactId>spigot-api</artifactId>
-           <version>1.12.2-R0.1-SNAPSHOT</version>
-           <scope>provided</scope>
-    </dependency>
-    <dependency>
-    		<groupId>essentials</groupId>
-    		<artifactId>EssentialsChat</artifactId>
-    		<version>2.18.2.0</version>
-    </dependency>
-    <dependency>
-    		<groupId>net.ess3</groupId>
-    		<artifactId>EssentialsX</artifactId>
-    		<version>2.18.2</version>
-    </dependency>
-  </dependencies>
-  
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <maven.compiler.release>21</maven.compiler.release>
+        <spigot.version>1.21.8-R0.1-SNAPSHOT</spigot.version>
+        <essentials.version>2.21.2</essentials.version>
+        <junit.version>5.11.4</junit.version>
+    </properties>
+
+    <repositories>
+        <repository>
+            <id>spigot-repo</id>
+            <url>https://hub.spigotmc.org/nexus/content/repositories/snapshots/</url>
+        </repository>
+        <repository>
+            <id>essentialsx-releases</id>
+            <url>https://repo.essentialsx.net/releases/</url>
+        </repository>
+    </repositories>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.spigotmc</groupId>
+            <artifactId>spigot-api</artifactId>
+            <version>${spigot.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>net.essentialsx</groupId>
+            <artifactId>EssentialsX</artifactId>
+            <version>${essentials.version}</version>
+            <scope>provided</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.jetbrains</groupId>
+            <artifactId>annotations</artifactId>
+            <version>26.0.2</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>${junit.version}</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <finalName>DRChannels-${project.version}</finalName>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+                <includes>
+                    <include>plugin.yml</include>
+                </includes>
+            </resource>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>false</filtering>
+                <excludes>
+                    <exclude>plugin.yml</exclude>
+                </excludes>
+            </resource>
+        </resources>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.13.0</version>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.5.2</version>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+                <version>3.3.1</version>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>3.4.2</version>
+            </plugin>
+        </plugins>
+    </build>
 </project>

@@ -1,0 +1,57 @@
+# DRChannels channel definitions.
+#
+# Every channel is a section under "channels" keyed by its id ([a-z0-9_-], max 32 chars).
+#
+# Common options:
+#   type:              global | world | local | worlds | team  (other plugins may register more)
+#   display-name:      Human readable name (defaults to the id)
+#   tag:               Text inserted at {CHANNEL} in the chat format (& colours and &#rrggbb supported)
+#   aliases:           Alternative names usable in commands
+#   permission:        Permission required to join and read. Defaults to drchannels.channel.<id>;
+#                      set to 'none' to let everyone join.
+#   speak-permission:  Permission required to talk. Defaults to the join permission (use for read-only channels).
+#   auto-join:         Join players automatically on login (until they leave it themselves). Default false.
+#   leavable:          Whether players may leave the channel. Default true.
+#
+# Type specific options:
+#   local:   radius  - blocks the message travels (same world only)
+#   worlds:  worlds  - list of worlds the channel works in; players elsewhere neither send nor receive
+
+channels:
+  global:
+    type: global
+    display-name: Global
+    tag: '&7[G] '
+    aliases: [g]
+    auto-join: true
+
+  local:
+    type: local
+    display-name: Local
+    tag: '&e[L] '
+    aliases: [l]
+    permission: none
+    auto-join: true
+    radius: 100
+
+  world:
+    type: world
+    display-name: World
+    tag: '&b[W] '
+    aliases: [w]
+    permission: none
+
+  trade:
+    type: global
+    display-name: Trade
+    tag: '&6[Trade] '
+    aliases: [t]
+    permission: none
+
+  staff:
+    type: global
+    display-name: Staff
+    tag: '&c[Staff] '
+    aliases: [s]
+    # permission defaults to drchannels.channel.staff
+    auto-join: true

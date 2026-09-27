@@ -1,11 +1,39 @@
 name: DRChannels
-version: ${project.version}
+version: '${project.version}'
 main: me.danieli1818.drchannels.DRChannels
-authors: [DanielRottner]
-description: DRChannels Minecraft Plugin For Chat Channels.
-api-version: 1.12
+api-version: '1.21'
+author: danieli1818
+description: '${project.description}'
+softdepend: [Essentials, EssentialsChat]
 
 commands:
-    drchannels:
-        description: channels commands.
-        aliases: [drchannel, channels, channel, chan, ch]
+  channel:
+    description: Join, leave, focus and manage chat channels.
+    usage: /<command> [channel [message]] | join | leave | list | info | create | delete | reload
+    aliases: [ch, drc, drchannels]
+    permission: drchannels.use
+
+permissions:
+  drchannels.use:
+    description: Use the /channel command.
+    default: true
+  drchannels.admin:
+    description: All administrative DRChannels permissions and access to every channel.
+    default: op
+    children:
+      drchannels.create: true
+      drchannels.delete: true
+      drchannels.reload: true
+      drchannels.channel.*: true
+  drchannels.create:
+    description: Create channels with /channel create.
+    default: op
+  drchannels.delete:
+    description: Delete channels with /channel delete.
+    default: op
+  drchannels.reload:
+    description: Reload DRChannels configuration.
+    default: op
+  drchannels.channel.*:
+    description: Join, read and speak in every channel, regardless of its permission settings.
+    default: op

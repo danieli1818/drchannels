@@ -1,66 +1,102 @@
 package me.danieli1818.drchannels;
 
-import java.util.Collection;
-import java.util.HashSet;
-
-import org.bukkit.configuration.serialization.ConfigurationSerializable;
-import org.bukkit.plugin.Plugin;
+import me.danieli1818.drchannels.api.ChannelTypeRegistry;
+import me.danieli1818.drchannels.channel.BuiltInChannelTypes;
+import me.danieli1818.drchannels.channel.ChannelConfig;
+import me.danieli1818.drchannels.channel.ChannelRegistry;
+import me.danieli1818.drchannels.chat.BukkitChatListener;
+import me.danieli1818.drchannels.chat.ChannelChatService;
+import me.danieli1818.drchannels.chat.EssentialsChatListener;
+import me.danieli1818.drchannels.chatter.ChatterManager;
+import me.danieli1818.drchannels.chatter.PlayerConnectionListener;
+import me.danieli1818.drchannels.command.ChannelCommand;
+import me.danieli1818.drchannels.command.CommandContext;
+import me.danieli1818.drchannels.util.Messages;
+import org.bukkit.command.PluginCommand;
+import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import com.earth2me.essentials.Essentials;
+import java.io.File;
+import java.util.Objects;
 
-import me.danieli1818.drchannels.channels.management.ChannelsManager;
-import me.danieli1818.drchannels.channels.management.channelstypes.types.LocalChannel;
-import me.danieli1818.drchannels.channels.management.channelstypes.types.NormalChannel;
-import me.danieli1818.drchannels.commands.ChannelsCommands;
-import me.danieli1818.drchannels.listeners.ChannelsListener;
-import me.danieli1818.drchannels.utils.FileConfigurationsManager;
-import me.danieli1818.drchannels.utils.SchedulerUtils;
-import net.md_5.bungee.api.ChatColor;
+public final class DRChannels extends JavaPlugin {
 
-public class DRChannels extends JavaPlugin {
-	
-	@Override
-	public void onEnable() {
-		super.onEnable();
-		
-		me.danieli1818.drchannels.utils.MessagesSender.getInstance(ChatColor.GREEN + "[" + ChatColor.GOLD + "DRChannels" + ChatColor.GREEN + "]" + ChatColor.BLUE);
-		
-		FileConfigurationsManager fcm = FileConfigurationsManager.getInstance(this);
-		
-		fcm.registerConfigurationSerializables(getConfigurationSerializablesClasses());
-		fcm.createConfigurationFile("config.yml");
-		fcm.createConfigurationFile("channels.yml");
-		fcm.reloadAllFiles();
-		
-		SchedulerUtils.getInstance(this);
+    private static final String CHANNELS_FILE = "channels.yml";
+    private static final String ESSENTIALS_CHAT_EVENT = "net.essentialsx.api.v2.events.chat.GlobalChatEvent";
 
-		Plugin essentialsPlugin = getServer().getPluginManager().getPlugin("Essentials");
-		
-		if (essentialsPlugin == null || !(essentialsPlugin instanceof Essentials)) {
-			System.err.println("EssentialsX Plugin Is Missing!");
-			return;
-		}
-		
-		ChannelsManager channelsManager = ChannelsManager.getInstance(this);
-		channelsManager.loadChannels();
-		
-		getCommand("drchannels").setExecutor(ChannelsCommands.getInstance());
-		
-		getServer().getPluginManager().registerEvents(ChannelsListener.getInstance((Essentials) essentialsPlugin), this);
-		
-	}
-	
-	@Override
-	public void onDisable() {
-		super.onDisable();
-	}
-	
-	private Collection<Class<? extends ConfigurationSerializable>> getConfigurationSerializablesClasses() {
-		Collection<Class<? extends ConfigurationSerializable>> configurationSerializablesClasses = new HashSet<>();
-		configurationSerializablesClasses.add(NormalChannel.class);
-		configurationSerializablesClasses.add(LocalChannel.class);
-		return configurationSerializablesClasses;
-	}
-	
+    private final ChannelTypeRegistry channelTypes = new ChannelTypeRegistry();
+    private final Messages messages = new Messages();
+    private ChannelRegistry channels;
+    private ChannelChatService chat;
+
+    @Override
+    public void onLoad() {
+        BuiltInChannelTypes.registerAll(channelTypes);
+    }
+
+    @Override
+    public void onEnable() {
+        saveDefaultConfig();
+        if (!new File(getDataFolder(), CHANNELS_FILE).exists()) {
+            saveResource(CHANNELS_FILE, false);
+        }
+
+        channels = new ChannelRegistry(new ChannelConfig(channelTypes, new File(getDataFolder(), CHANNELS_FILE), getLogger()), getLogger());
+        final ChatterManager chatters = new ChatterManager(this, channels);
+        channels.onChange(chatters::reconcileAll);
+        chat = new ChannelChatService(channels, chatters, messages, getLogger());
+
+        final PluginManager pluginManager = getServer().getPluginManager();
+        pluginManager.registerEvents(new PlayerConnectionListener(chatters, chat), this);
+        registerChatHook(pluginManager);
+
+        final PluginCommand command = Objects.requireNonNull(getCommand("channel"), "channel command missing from plugin.yml");
+        final ChannelCommand executor = new ChannelCommand(new CommandContext(channels, chatters, chat, messages), channelTypes, this::reload);
+        command.setExecutor(executor);
+        command.setTabCompleter(executor);
+
+        // Deferred to the first tick so plugins depending on DRChannels can register channel types in their onEnable.
+        getServer().getScheduler().runTask(this, this::reload);
+    }
+
+    /**
+     * Reloads config.yml, messages and channels.yml, then re-validates every online player.
+     *
+     * @return {@code false} if channels.yml could not be read and the current channels were kept
+     */
+    public boolean reload() {
+        reloadConfig();
+        // Include messages added to the bundled config.yml after the server's copy was written.
+        getConfig().options().copyDefaults(true);
+        messages.load(getConfig().getConfigurationSection("messages"));
+        chat.standaloneFormat(getConfig().getString("format", "{CHANNEL}{DISPLAYNAME}&7: &r{MESSAGE}"));
+        return channels.reload(getConfig().getString("default-channel"));
+    }
+
+    /**
+     * Registry other plugins use to add their own channel types.
+     */
+    public ChannelTypeRegistry getChannelTypes() {
+        return channelTypes;
+    }
+
+    private void registerChatHook(PluginManager pluginManager) {
+        final boolean essentialsChat = pluginManager.isPluginEnabled("EssentialsChat") && isClassPresent(ESSENTIALS_CHAT_EVENT);
+        pluginManager.registerEvents(new BukkitChatListener(chat, !essentialsChat), this);
+        if (essentialsChat) {
+            pluginManager.registerEvents(new EssentialsChatListener(chat), this);
+            getLogger().info("Hooked into EssentialsChat; using its chat formats.");
+        } else {
+            getLogger().info("EssentialsChat (2.19+) not found; using the format from config.yml.");
+        }
+    }
+
+    private boolean isClassPresent(String className) {
+        try {
+            Class.forName(className, false, getClassLoader());
+            return true;
+        } catch (ClassNotFoundException e) {
+            return false;
+        }
+    }
 }
